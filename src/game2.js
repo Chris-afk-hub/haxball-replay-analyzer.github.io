@@ -6813,25 +6813,21 @@ O.prototype = {
           window.tacBoardReplayTick = (window.tacBoardReplayTick || 0) + 1;
           if (st && st.Td && st.Sd) window.tacBoardReplayStadium = { width: st.Td, height: st.Sd };
 
-// Mantener la última posición válida de cada jugador: durante la reconstrucción
-// algunos objetos HaxBall pueden no tener cuerpo físico en un tick concreto.
-b.forEach(function (p) {
-  if (!p || !p.ea || !p.w || !p.H || !p.H.a) return;
-  var team = String(p.ea.w || '');
-  if (team !== 'Red' && team !== 'Blue') return;
-  var key = team + '|' + String(p.w);
-  var x = Number(p.H.a.x), y = Number(p.H.a.y);
-  if (Number.isFinite(x) && Number.isFinite(y)) {
-    window.tacBoardReplayLastPositions[key] = { name: String(p.w), team: team, x: x, y: y };
-  }
-});
-if (window.tacBoardReplayTick % 60 === 1) {
-  var tacBoardPlayers = Object.keys(window.tacBoardReplayLastPositions).map(function (key) {
-    return window.tacBoardReplayLastPositions[key];
+// Capturar posiciones directamente del estado actual del motor.
+// 6 ticks = 10 muestras por segundo; no reutilizar posiciones antiguas.
+if (window.tacBoardReplayTick % 6 === 1) {
+  var tacBoardPlayers = b.filter(function (p) {
+    return p && p.ea && p.H && p.H.a &&
+      (p.ea.w === 'Red' || p.ea.w === 'Blue') &&
+      Number.isFinite(Number(p.H.a.x)) && Number.isFinite(Number(p.H.a.y));
+  }).map(function (p) {
+    return { name: String(p.w || ''), team: String(p.ea.w), x: Number(p.H.a.x), y: Number(p.H.a.y) };
   });
   var tacBoardFrame = {
-    timeSec: Math.floor((window.tacBoardReplayTick - 1) / 60),
-    ball: d && d[0] && d[0].a ? { x: d[0].a.x, y: d[0].a.y } : null,
+    timeSec: (window.tacBoardReplayTick - 1) / 60,
+    ball: d && d[0] && d[0].a &&
+      Number.isFinite(Number(d[0].a.x)) && Number.isFinite(Number(d[0].a.y))
+      ? { x: Number(d[0].a.x), y: Number(d[0].a.y) } : null,
     players: tacBoardPlayers
   };
   window.tacBoardReplaySamples.push(tacBoardFrame);
