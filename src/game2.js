@@ -1072,6 +1072,18 @@ function ha(a) {
   var d = v.Ea(this.g);
   this.ti = a;
   d.get('reset').onclick = function () {
+    if (window.tacBoardReplayClock === a) {
+      window.tacBoardReplaySamples = [];
+      window.tacBoardReplayLastBucket = -1;
+      window.tacBoardReplayLastStadium = null;
+      window.tacBoardReplayStadium = null;
+      window.tacBoardReplaySent = false;
+      sendTacBoardMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' });
+      sendTacBoardMessage({
+        type: 'TACBOARD_HAXBALL_REPLAY_START',
+        durationSec: Number(a.mf) / 60
+      });
+    }
     a.ui();
     c.el()
   };
