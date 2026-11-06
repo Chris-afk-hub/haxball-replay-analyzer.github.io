@@ -51,7 +51,7 @@ function captureTacBoardFrame(engine) {
   window.tacBoardReplayLastBucket = bucket;
 
   var currentMatch = match[match.length - 1] || {};
-  var stadium = currentMatch.stadium || window.tacBoardReplayStadium || null;
+  var stadium = currentMatch.stadium || null;
   if (!stadium) return;
   var stadiumChanged = stadium !== window.tacBoardReplayLastStadium;
   if (stadiumChanged) {
@@ -78,6 +78,10 @@ function captureTacBoardFrame(engine) {
   var frame = {
     timeSec: bucket / 10,
     replayTick: tick,
+    teamCounts: {
+      red: currentMatch.redTeam ? currentMatch.redTeam.length : 0,
+      blue: currentMatch.blueTeam ? currentMatch.blueTeam.length : 0
+    },
     players: playersNow,
     ball: ballDisc && ballDisc.a &&
       Number.isFinite(Number(ballDisc.a.x)) && Number.isFinite(Number(ballDisc.a.y))
