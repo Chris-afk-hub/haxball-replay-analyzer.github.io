@@ -26,14 +26,26 @@ function resetReplay() {
 
 }
 
+function sendTacBoardMessage(data) {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      if (!window.tacBoardChannel) window.tacBoardChannel = new BroadcastChannel('tacboard-hbr2');
+      window.tacBoardChannel.postMessage(data);
+    }
+  } catch (e) {}
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(data, 'https://chris-afk-hub.github.io');
+    }
+  } catch (e) {}
+}
+
 function newReplay() {
   dispatchClearStats();
   window.tacBoardReplayTick = 0;
   window.tacBoardReplaySamples = [];
   window.tacBoardReplayStadium = null;
-  if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' }, 'https://chris-afk-hub.github.io');
-  }
+  sendTacBoardMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' });
   keepUpdating = true;
   loading = {
     recLength: 1,
@@ -4625,14 +4637,12 @@ xa.prototype = C(V.prototype, {
         loading.done = true;
         keepUpdating = false;
         // Exportar posiciones reconstruidas por el analizador, no solo el primer estado.
-        if (window.opener && !window.opener.closed) {
-          var tacBoardFrames = window.tacBoardReplaySamples || [];
-          window.opener.postMessage({
-            type: 'TACBOARD_HAXBALL_REPLAY_DATA',
-            stadium: window.tacBoardReplayStadium || null,
-            frames: tacBoardFrames
-          }, 'https://chris-afk-hub.github.io');
-        }
+        var tacBoardFrames = window.tacBoardReplaySamples || [];
+        sendTacBoardMessage({
+          type: 'TACBOARD_HAXBALL_REPLAY_DATA',
+          stadium: window.tacBoardReplayStadium || null,
+          frames: tacBoardFrames
+        });
         dispatchPlayerList(playerList);
         dispatchPlayerPos(playerPos);
         setGameStats(match);
@@ -6812,13 +6822,11 @@ if (window.tacBoardReplayTick % 60 === 1) {
   };
 
   window.tacBoardReplaySamples.push(tacBoardFrame);
-  if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({
-      type: 'TACBOARD_HAXBALL_REPLAY_FRAME',
-      stadium: { width: st.Td, height: st.Sd },
-      frame: tacBoardFrame
-    }, 'https://chris-afk-hub.github.io');
-  }
+  sendTacBoardMessage({
+    type: 'TACBOARD_HAXBALL_REPLAY_FRAME',
+    stadium: { width: st.Td, height: st.Sd },
+    frame: tacBoardFrame
+  });
 }
           if (d[0].a.x < (redGoalCord[0] / 3)) match[match.length - 1].thirds[0]++;
           else if (d[0].a.x < (blueGoalCord[0] / 3)) match[match.length - 1].thirds[1]++;
