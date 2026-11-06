@@ -4711,18 +4711,19 @@ xa.prototype = C(V.prototype, {
   },
   Dl: function () {
     var a = this.Lc;
-    // CHECKPOINT WAŻNY tu leci nagranie, całe byteLength
+    // Medir el consumo real del buffer; no detectar EOF por una bajada del porcentaje,
+    // porque reiniciar o buscar hacia atrás también hace que el porcentaje baje.
     if (loading.recLength == 1) {
-      loading.recLength = a.o.byteLength - a.a;
+      loading.recLength = Math.max(1, a.o.byteLength - a.a);
     }
     else if (!loading.done) {
-      loading.analyzed = loading.recLength - a.o.byteLength + a.a;
-      const progress = Math.floor(loading.analyzed / loading.recLength * 100);
-      if (progress < loading.progress) {
-        // console.log('koniec analizy', a);
+      var remaining = Math.max(0, a.o.byteLength - a.a);
+      loading.analyzed = Math.max(0, loading.recLength - remaining);
+      const progress = Math.max(0, Math.min(100, Math.floor(loading.analyzed / loading.recLength * 100)));
+      if (a.a >= a.o.byteLength) {
         loading.done = true;
         keepUpdating = false;
-        // El envío completo se realiza cuando el reloj de reproducción alcanza mf.
+        // La exportación de posiciones se envía al terminar la reproducción completa.
         dispatchPlayerList(playerList);
         dispatchPlayerPos(playerPos);
         setGameStats(match);
@@ -4730,12 +4731,6 @@ xa.prototype = C(V.prototype, {
       } else if (progress !== loading.progress) {
         loading.progress = progress;
         loading.changed = true;
-        // document.getElementById('loading-progress').style.width = '' + progress + '%'
-        // setLoadingProgress2(progress + '%')
-        // $('#loading-progress').css('width', progress + '%')
-        // document.getElementById('progress').innerHTML = '' + progress;
-        // console.log(progress + '%')
-        // console.log(loading.analyzed, loading.recLength, a.o.byteLength - a.a)
       }
     }
     0 < a.o.byteLength - a.a ? (a = this.Lc.Ab(), this.hg += a, a = this.Lc.Ob(), this.gg = m.fh(this.Lc), this.gg.P = a) : this.gg = null
