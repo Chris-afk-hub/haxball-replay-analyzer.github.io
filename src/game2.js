@@ -44,6 +44,8 @@ function newReplay() {
   dispatchClearStats();
   window.tacBoardReplayTick = 0;
   window.tacBoardReplaySamples = [];
+  window.tacBoardReplayLastBucket = -1;
+  window.tacBoardReplayClock = null;
   window.tacBoardReplayLastPositions = Object.create(null);
   window.tacBoardReplayStadium = null;
   sendTacBoardMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' });
@@ -5725,6 +5727,9 @@ u.Dh = function (a) {
 u.po = function (a) {
   try {
     var b = new Vb(new Jb(new Uint8Array(a), new fa, 3));
+    // Exponer el reloj del reproductor para sincronizar las posiciones con el tiempo HBR2.
+    window.tacBoardReplayClock = b.ya;
+    window.tacBoardReplayLastBucket = -1;
     b.je.de = function () {
       b.ia();
       u.xb()
@@ -6813,29 +6818,37 @@ O.prototype = {
           window.tacBoardReplayTick = (window.tacBoardReplayTick || 0) + 1;
           if (st && st.Td && st.Sd) window.tacBoardReplayStadium = { width: st.Td, height: st.Sd };
 
-// Capturar posiciones directamente del estado actual del motor.
-// 6 ticks = 10 muestras por segundo; no reutilizar posiciones antiguas.
-if (window.tacBoardReplayTick % 6 === 1) {
-  var tacBoardPlayers = b.filter(function (p) {
-    return p && p.ea && p.H && p.H.a &&
-      (p.ea.w === 'Red' || p.ea.w === 'Blue') &&
-      Number.isFinite(Number(p.H.a.x)) && Number.isFinite(Number(p.H.a.y));
-  }).map(function (p) {
-    return { name: String(p.w || ''), team: String(p.ea.w), x: Number(p.H.a.x), y: Number(p.H.a.y) };
-  });
-  var tacBoardFrame = {
-    timeSec: (window.tacBoardReplayTick - 1) / 60,
-    ball: d && d[0] && d[0].a &&
-      Number.isFinite(Number(d[0].a.x)) && Number.isFinite(Number(d[0].a.y))
-      ? { x: Number(d[0].a.x), y: Number(d[0].a.y) } : null,
-    players: tacBoardPlayers
-  };
-  window.tacBoardReplaySamples.push(tacBoardFrame);
-  sendTacBoardMessage({
-    type: 'TACBOARD_HAXBALL_REPLAY_FRAME',
-    stadium: { width: st.Td, height: st.Sd },
-    frame: tacBoardFrame
-  });
+// Usar el reloj real del reproductor HBR2 (Go), no los ticks de juego:
+// el contador del partido no incluye pausas, reinicios ni tiempo fuera del juego.
+var tacBoardReplayTime = window.tacBoardReplayClock &&
+  typeof window.tacBoardReplayClock.Go === 'function'
+  ? Number(window.tacBoardReplayClock.Go()) : NaN;
+if (Number.isFinite(tacBoardReplayTime) && tacBoardReplayTime >= 0) {
+  var tacBoardBucket = Math.floor(tacBoardReplayTime * 10 + 0.00001);
+  if (tacBoardBucket > window.tacBoardReplayLastBucket) {
+    window.tacBoardReplayLastBucket = tacBoardBucket;
+    var tacBoardPlayers = b.filter(function (p) {
+      return p && p.ea && p.H && p.H.a &&
+        (p.ea.w === 'Red' || p.ea.w === 'Blue') &&
+        Number.isFinite(Number(p.H.a.x)) && Number.isFinite(Number(p.H.a.y));
+    }).map(function (p) {
+      return { name: String(p.w || ''), team: String(p.ea.w), x: Number(p.H.a.x), y: Number(p.H.a.y) };
+    });
+    var tacBoardFrame = {
+      timeSec: tacBoardBucket / 10,
+      replayClockSec: tacBoardReplayTime,
+      ball: d && d[0] && d[0].a &&
+        Number.isFinite(Number(d[0].a.x)) && Number.isFinite(Number(d[0].a.y))
+        ? { x: Number(d[0].a.x), y: Number(d[0].a.y) } : null,
+      players: tacBoardPlayers
+    };
+    window.tacBoardReplaySamples.push(tacBoardFrame);
+    sendTacBoardMessage({
+      type: 'TACBOARD_HAXBALL_REPLAY_FRAME',
+      stadium: { width: st.Td, height: st.Sd },
+      frame: tacBoardFrame
+    });
+  }
 }
           if (d[0].a.x < (redGoalCord[0] / 3)) match[match.length - 1].thirds[0]++;
           else if (d[0].a.x < (blueGoalCord[0] / 3)) match[match.length - 1].thirds[1]++;
