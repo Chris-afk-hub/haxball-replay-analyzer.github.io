@@ -1072,18 +1072,6 @@ function ha(a) {
   var d = v.Ea(this.g);
   this.ti = a;
   d.get('reset').onclick = function () {
-    if (window.tacBoardReplayClock === a) {
-      window.tacBoardReplaySamples = [];
-      window.tacBoardReplayLastBucket = -1;
-      window.tacBoardReplayLastStadium = null;
-      window.tacBoardReplayStadium = null;
-      window.tacBoardReplaySent = false;
-      sendTacBoardMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' });
-      sendTacBoardMessage({
-        type: 'TACBOARD_HAXBALL_REPLAY_START',
-        durationSec: Number(a.mf) / 60
-      });
-    }
     a.ui();
     c.el()
   };
@@ -4774,6 +4762,19 @@ xa.prototype = C(V.prototype, {
     // console.log(this.Lc);
   },
   ui: function () {
+    // Reiniciar también el puente de Tac-Board cuando el reproductor vuelve a 00:00.
+    if (window.tacBoardReplayClock === this) {
+      window.tacBoardReplaySamples = [];
+      window.tacBoardReplayLastBucket = -1;
+      window.tacBoardReplayLastStadium = null;
+      window.tacBoardReplayStadium = null;
+      window.tacBoardReplaySent = false;
+      sendTacBoardMessage({ type: 'TACBOARD_HAXBALL_REPLAY_RESET' });
+      sendTacBoardMessage({
+        type: 'TACBOARD_HAXBALL_REPLAY_START',
+        durationSec: Number(this.mf) / 60
+      });
+    }
     this.hg = 0;
     this.Qb = this.Y = this.Lc.a = 0;
     this.T.ja(this.Lc);
