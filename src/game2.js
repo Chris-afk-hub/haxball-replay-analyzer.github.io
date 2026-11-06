@@ -4753,7 +4753,17 @@ xa.prototype = C(V.prototype, {
       this.Y++;
       this.T.C(1)
     }
-    if (this.Y >= this.mf) finishTacBoardReplay();
+    if (this.Y >= this.mf) {
+      if (!loading.done) {
+        loading.done = true;
+        keepUpdating = false;
+        dispatchPlayerList(playerList);
+        dispatchPlayerPos(playerPos);
+        setGameStats(match);
+        bringReplayer();
+      }
+      finishTacBoardReplay();
+    }
   },
   er: function (a) {
     this.Fd = a;
